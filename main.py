@@ -1,3 +1,4 @@
+from api import fetch_live_price
 from models import Asset
 from storage import load_watchlist, save_watchlist
 
@@ -33,13 +34,20 @@ def display_menu():
     print("\nWatchlist Tracker Menu:")
     print("1. View Watchlist")
     print("2. Add New Asset")
-    print("3. Update Mock Asset")
+    print("3. Refresh All Live Prices")
     print("4. Remove Asset")
     print("5. Exit\n")
 
 
 def main():
     watchlist = load_watchlist()
+    if watchlist:
+        print("Syncing live prices...")
+        for asset in watchlist:
+            live_price = fetch_live_price(asset.symbol)
+            if live_price is not None:
+                asset.current_price = fetch_live_price(asset.symbol)
+        save_watchlist(watchlist)
 
     while True:
         display_menu()
@@ -55,7 +63,12 @@ def main():
             symbol = get_symbol_input()
             name = get_name_input()
             target_price = get_float_input("Enter target price: ")
-            current_price = get_float_input("Enter mock price: ")
+            print(f"Fetching live price for {symbol}...")
+            live_price = fetch_live_price(symbol)
+            if live_price is None:
+                print("Could not verify ticker symbol. Asset was not added.")
+                continue
+            current_price = live_price
 
             existing_asset = None
             for asset in watchlist:
@@ -75,19 +88,18 @@ def main():
                 print(f"Asset {symbol} added to watchlist.")
 
         elif choice == "3":
-            symbol = get_symbol_input()
-            found = False
-            for asset in watchlist:
-                if asset.symbol == symbol:
-                    asset.current_price = get_float_input(
-                        f"Enter new mock price for {symbol}: "
-                    )
-                    save_watchlist(watchlist)
-                    print(f"Asset {symbol} updated.")
-                    found = True
-                    break
-            if not found:
-                print(f"Asset {symbol} not found in watchlist.")
+            if not watchlist:
+                print("\n----------\nYour watchlist is empty.\n----------")
+            else:
+                print("\nRefreshing live prices...")
+                update_counter = 0
+                for asset in watchlist:
+                    live_price = fetch_live_price(asset.symbol)
+                    if live_price is not None:
+                        asset.current_price = live_price
+                        update_counter += 1
+                save_watchlist(watchlist)
+                print(f"Updated {update_counter} of {len(watchlist)} assets.")
         elif choice == "4":
             symbol = get_symbol_input()
             found = False

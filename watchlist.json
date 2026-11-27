@@ -1,0 +1,8 @@
+[
+    {
+        "symbol": "BTC-USD",
+        "name": "Bitcoin",
+        "target_price": 100.0,
+        "current_price": 61415.01
+    }
+]
